@@ -32,6 +32,17 @@ def filter_colours(input_data):
     return filtered_colors
 
 
+def get_colour_names(detected_colours):
+    counter = collections.Counter(detected_colours)  # Retrieve the colours detected in the image by removing the duplicates
+    common_colours = counter.most_common(5)  # Store the most common colours 5 colours out of the detected colours
+    common_colour_names = []
+
+    for colour in common_colours:
+        common_colour_names.append(colour[0])
+
+    return common_colour_names
+
+
 execution_path = os.getcwd()
 detector = ObjectDetection()  # Create an instance of ObjectDetection()
 detector.setModelTypeAsRetinaNet()  # Set the detection type of the ObjectDetection instance
@@ -42,39 +53,41 @@ detector.loadModel()  # Load the ObjectDetection model
 
 detectedColours = []  # Declare an array to store all the detected objects of an image
 detectedObjects = []  # Declare an array to store all the detected colours of an image
+image_caption_data = []
 
-image_folder_directory = r"C:\Users\USER\Downloads\retinanet_resnet50_fpn_coco-eeacb38b\animal-painting"
+image_folder_directory = r"D:\retinanet_resnet50_fpn_coco-eeacb38b\test-paintings"
 
-for image in os.listdir(image_folder_directory):
+columnNames = ['Image File', 'Colours', 'Objects']
 
-    detections = detector.detectObjectsFromImage(
-        input_image=os.path.join(execution_path + r"\animal-painting", image))
-    img = Image.open(r"animal-painting\\" + image)
-    image_colors = img.convert('RGB').getcolors(img.size[0] * img.size[1])
-    image_colors = filter_colours(image_colors)
+with open('wikiart-captions.csv', 'w') as wikiArtCaptionFile:
+    csvWriter = csv.writer(wikiArtCaptionFile)
+    csvWriter.writerow(columnNames)
 
-    for detectedColour in image_colors:
-        detectedColours.append(convert_rgb_to_names(detectedColour))
+    for image in os.listdir(image_folder_directory):
+        # Clear the arrays where detected colours, detected objects are stored in each iteration
+        detectedColours.clear()
+        detectedObjects.clear()
+        image_caption_data.clear()
 
-    for detectedObject in detections:
-        detectedObjects.append(detectedObject['name'])
+        detections = detector.detectObjectsFromImage(
+            input_image=os.path.join(execution_path + r"\test-paintings", image))
+        img = Image.open(r"test-paintings\\" + image)
+        image_colors = img.convert('RGB').getcolors(img.size[0] * img.size[1])
+        image_colors = filter_colours(image_colors)
 
-    counter = collections.Counter(detectedColours)  # Retrieve the colours detected in the image by removing the duplicates
-    print("OUTPUT----------------")
-    print(type(counter.most_common(5)[0]))
-    print(counter.most_common(5)[0][0])
-    print(img, str(counter.most_common(5)), detectedObjects, "\n")
+        for detectedColour in image_colors:
+            detectedColours.append(convert_rgb_to_names(detectedColour))
 
-    columnNames = ['Image File', 'Colours', 'Objects']
-    with open('wikiart-captions.csv', 'w') as wikiArtCaptionFile:
-        image_file_name = image
-        detected_colours = detectedColours
-        csvWriter = csv.writer(wikiArtCaptionFile)
-        csvWriter.writerow(columnNames)
-        csvWriter.writerow()
-        wikiArtCaptionFile.write(img.filename + '- ')
-        wikiArtCaptionFile.write(str(counter.most_common(5)))
-        wikiArtCaptionFile.write(" | ")
         for detectedObject in detections:
-            wikiArtCaptionFile.write(str(detectedObject["name"]) + ",")
-        wikiArtCaptionFile.write("\n")
+            detectedObjects.append(detectedObject['name'])
+
+        countObjects = collections.Counter(detectedObjects)
+        print("OBJECT COUNT: ",countObjects)
+
+        detected_colour_names = get_colour_names(detectedColours)
+        image_file_name = image
+        image_caption_data = [image_file_name, detected_colour_names, detectedObjects]
+        print(image_caption_data, "\n")
+
+        csvWriter.writerow(image_caption_data)
+    print("END")
