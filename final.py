@@ -42,17 +42,6 @@ def get_colour_names(detected_colours):
 
     return common_colour_names
 
-def build_image_caption(count_objects, detected_colours):
-    if len(count_objects) == 0:
-        return f"{detected_colours}, no objects"
-    else:
-        for object_name, object_count in count_objects.items():
-            if object_count > 1:
-                return f"{detected_colours}, {object_count} {object_name}s"
-            else:
-                return f"{detected_colours}, {object_count} {object_name}"
-
-
 execution_path = os.getcwd()
 detector = ObjectDetection()  # Create an instance of ObjectDetection()
 detector.setModelTypeAsRetinaNet()  # Set the detection type of the ObjectDetection instance
@@ -92,13 +81,11 @@ with open('wikiart-captions.csv', 'w') as wikiArtCaptionFile:
             detectedObjects.append(detectedObject['name'])
 
         countObjects = collections.Counter(detectedObjects)
-        print("OBJECT COUNT: ",countObjects)
-
         detected_colour_names = get_colour_names(detectedColours)
         image_file_name = image
-        image_caption = build_image_caption(countObjects, detected_colour_names)
-        image_caption_data = [image_file_name, detected_colour_names, detectedObjects, image_caption]
-        print(image_caption_data, "\n")
+        image_caption = ', '.join(detected_colour_names + list(countObjects.keys()))
+        image_caption_data = [image_file_name, detected_colour_names, countObjects.keys(), image_caption]
+        print(image_caption, "\n")
 
         csvWriter.writerow(image_caption_data)
     print("END")
